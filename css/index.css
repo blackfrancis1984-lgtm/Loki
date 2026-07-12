@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a3a2c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CasinoLife">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%230e4a38' stroke='%23c9a24d' stroke-width='4'/%3E%3Ccircle cx='50' cy='50' r='14' fill='%23c9a24d'/%3E%3C/svg%3E">
+<title>CasinoLife · Simulador de Posturas Sobrepuestas</title>
+<style>
+  :root{
+    --felt-dark:#0a3a2c;
+    --felt:#0e4a38;
+    --rail:#241108;
+    --rail-dark:#180b05;
+    --gold:#c9a24d;
+    --gold-bright:#eecf88;
+    --cream:#f2ead7;
+    --cream-dim:#cfc4a8;
+    --red-num:#a4222a;
+    --black-num:#171613;
+    --green-num:#0d5c40;
+    --danger:#c0392b;
+    --danger-bright:#ff6b5c;
+    --success:#3f9d6f;
+    --success-bright:#7ee6ab;
+    --panel:#12241d;
+    --panel-line:rgba(201,162,77,0.28);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at 20% -10%, #1c2b22 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 110%, #1c2b22 0%, transparent 55%),
+      linear-gradient(180deg,#0d1a14,#08120d 60%,#050b08);
+    min-height:100vh;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+    color:var(--cream);
+    padding:18px 14px 60px;
+  }
+  .eyebrow{font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);font-weight:600;}
+  h1{font-family:Georgia,'Iowan Old Style','Palatino Linotype',Palatino,serif;font-weight:600;font-size:25px;margin:2px 0 2px;color:var(--cream);}
+  h1 span{color:var(--gold-bright);font-style:italic;}
+  .subhead{font-size:13px;color:var(--cream-dim);margin:0 0 16px;max-width:62ch;line-height:1.5;}
+  .app{max-width:960px;margin:0 auto;}
+
+  .toprow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .toggle-group{display:flex;background:var(--panel);border:1px solid var(--panel-line);border-radius:10px;padding:3px;gap:2px;}
+  .toggle-btn{border:none;background:transparent;color:var(--cream-dim);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:600;padding:7px 12px;border-radius:7px;cursor:pointer;}
+  .toggle-btn.active{background:linear-gradient(180deg,var(--gold-bright),var(--gold));color:#241108;}
+  .toggle-btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .ghost-btn{border:1px solid var(--panel-line);background:var(--panel);color:var(--cream);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer;}
+  .ghost-btn:hover{border-color:var(--gold);}
+
+  .board-scroll{overflow-x:auto;padding-bottom:6px;margin-bottom:14px;}
+  .board-frame{
+    background:linear-gradient(160deg,var(--rail),var(--rail-dark));
+    border-radius:16px;padding:14px;min-width:660px;
+    box-shadow:0 18px 40px -18px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(201,162,77,0.25);
+    position:relative;
+  }
+  .board-frame.flash-correct{animation:flashGreen 0.9s ease;}
+  .board-frame.flash-incorrect{animation:flashRed 0.9s ease;}
+  @keyframes flashGreen{0%{box-shadow:0 0 0 4px rgba(126,230,171,0.9), 0 18px 40px -18px rgba(0,0,0,0.7);}100%{box-shadow:0 18px 40px -18px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(201,162,77,0.25);}}
+  @keyframes flashRed{0%{box-shadow:0 0 0 4px rgba(255,107,92,0.9), 0 18px 40px -18px rgba(0,0,0,0.7);}100%{box-shadow:0 18px 40px -18px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(201,162,77,0.25);}}
+
+  .board-inner{
+    display:flex;
+    background:radial-gradient(ellipse at 50% -20%, rgba(255,255,255,0.05), transparent 60%), var(--felt);
+    border-radius:8px;border:2px solid var(--gold);overflow:hidden;
+  }
+  .grid-wrap{position:relative;flex:1;}
+  .grid-numbers{display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(3,44px);width:100%;height:100%;}
+  .cell{display:flex;align-items:center;justify-content:center;font-family:Georgia,'Iowan Old Style','Palatino Linotype',Palatino,serif;font-weight:600;font-size:15px;color:var(--cream);border-left:1px solid rgba(201,162,77,0.22);border-bottom:1px solid rgba(201,162,77,0.22);}
+  .cell.red{background:linear-gradient(160deg,var(--red-num),#7c1a20);}
+  .cell.black{background:linear-gradient(160deg,#2a2824,var(--black-num));}
+  .zero-col{width:56px;flex-shrink:0;border-left:1px solid rgba(201,162,77,0.5);display:flex;flex-direction:column;}
+  .zero-cell{flex:1;display:flex;align-items:center;justify-content:center;color:var(--cream);background:linear-gradient(160deg,var(--green-num),#083c2a);font-family:Georgia,'Iowan Old Style','Palatino Linotype',Palatino,serif;font-weight:600;font-size:18px;border-bottom:1px solid rgba(201,162,77,0.3);position:relative;}
+  .zero-cell:last-child{border-bottom:none;}
+  .zero-cell.is-winner{background:linear-gradient(160deg,var(--gold-bright),var(--gold));color:#241108;box-shadow:inset 0 0 0 2px rgba(255,255,255,0.5);}
+  .dealer-tag{position:absolute;top:-9px;left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);background:var(--rail);padding:2px 8px;border-radius:6px;border:1px solid var(--panel-line);white-space:nowrap;}
+
+  .chip-overlay{position:absolute;inset:0;pointer-events:none;perspective:400px;}
+  .stack3d{position:absolute;width:30px;}
+  .drop-inner{position:relative;width:100%;height:100%;animation:chipDrop 0.5s cubic-bezier(.3,1.5,.6,1) both;animation-delay:var(--d,0ms);}
+  .stack3d .shadow-pool{
+    position:absolute;left:50%;bottom:-4px;width:34px;height:11px;
+    transform:translateX(-50%);
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0.55), rgba(0,0,0,0) 72%);
+    filter:blur(0.5px);
+  }
+  .stack3d .layer{
+    position:absolute;left:50%;width:30px;height:30px;border-radius:50%;
+    transform:translateX(-50%);
+    background:repeating-conic-gradient(var(--c) 0deg 20deg, var(--cd) 20deg 40deg);
+    box-shadow:0 1.5px 0 rgba(0,0,0,0.45), 0 2px 3px rgba(0,0,0,0.4);
+  }
+  .stack3d .layer.top{
+    background:
+      radial-gradient(circle at 33% 28%, color-mix(in srgb, var(--c) 45%, white), var(--c) 68%),
+      repeating-conic-gradient(var(--c) 0deg 20deg, var(--cd) 20deg 40deg);
+    box-shadow:0 2px 0 rgba(0,0,0,0.5), 0 3px 6px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.25);
+  }
+  .stack3d .layer.top .face{
+    position:absolute;inset:5px;border-radius:50%;
+    background:radial-gradient(circle at 33% 28%, color-mix(in srgb, var(--c) 55%, white), var(--c) 72%);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .stack3d .qty{
+    font-size:10.5px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.7);
+  }
+  @keyframes chipDrop{
+    0%{transform:translateY(-260%) scale(0.55) rotate(-8deg);opacity:0;}
+    65%{transform:translateY(8%) scale(1.08) rotate(2deg);opacity:1;}
+    100%{transform:translateY(0) scale(1) rotate(0deg);}
+  }
+  .dolly{
+    position:absolute;width:16px;height:16px;transform:translate(-50%,-50%);border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fffdf6,#e9dcb8 55%,#b89a54);
+    border:2px solid #241108;box-shadow:0 0 0 3px rgba(238,207,136,0.35), 0 4px 8px rgba(0,0,0,0.6);
+    animation:dollyDrop 0.55s cubic-bezier(.34,1.56,.64,1);z-index:3;
+  }
+  @keyframes dollyDrop{0%{transform:translate(-50%,-260%) scale(0.7);opacity:0;}70%{transform:translate(-50%,-40%) scale(1.05);opacity:1;}100%{transform:translate(-50%,-50%) scale(1);}}
+
+
+  .legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:11px;color:var(--cream-dim);}
+  .legend-item{display:flex;align-items:center;gap:5px;}
+  .legend-dot{width:13px;height:13px;border-radius:50%;border:2px dashed rgba(255,255,255,0.7);display:inline-block;}
+
+  .panels{display:flex;flex-direction:column;gap:14px;}
+  .panel{background:var(--panel);border:1px solid var(--panel-line);border-radius:14px;padding:18px 18px 20px;}
+  .panel-label{font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:10px;}
+  .start-copy{font-size:14px;line-height:1.6;color:var(--cream-dim);margin-bottom:16px;}
+  .primary-btn{background:linear-gradient(180deg,var(--gold-bright),var(--gold));color:#241108;border:none;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-weight:700;font-size:14px;padding:12px 22px;border-radius:10px;cursor:pointer;}
+  .primary-btn:hover{filter:brightness(1.05);}
+
+  .question-row{display:flex;flex-wrap:wrap;gap:18px;margin-bottom:14px;}
+  .qstat{min-width:110px;}
+  .qstat .k{font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--cream-dim);}
+  .qstat .v{font-family:Georgia,'Iowan Old Style','Palatino Linotype',Palatino,serif;font-size:20px;font-weight:600;margin-top:2px;}
+  .qstat .v.red{color:var(--danger-bright);}
+  .qstat .v.black{color:var(--cream);}
+  .qstat .v.green{color:var(--success-bright);}
+  .prompt{font-size:15px;margin-bottom:6px;color:var(--cream);}
+
+  .ticket{background:#0b1a14;border:1px solid var(--panel-line);border-radius:10px;padding:10px 12px;margin:10px 0 14px;font-size:12.5px;color:var(--cream-dim);}
+  .ticket-row{display:flex;justify-content:space-between;gap:8px;padding:3px 0;}
+  .ticket-row .code{display:inline-block;width:16px;height:16px;border-radius:50%;margin-right:6px;vertical-align:-3px;border:2px dashed rgba(255,255,255,0.7);}
+
+  .answer-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .answer-input{flex:1;min-width:140px;background:#0b1a14;border:1px solid var(--panel-line);border-radius:9px;color:var(--cream);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:18px;font-weight:600;padding:11px 14px;}
+  .answer-input:focus{outline:none;border-color:var(--gold);}
+
+  .feedback-banner{border-radius:10px;padding:12px 14px;margin-bottom:14px;font-weight:700;font-size:15px;}
+  .feedback-banner.correct{background:rgba(63,157,111,0.18);color:var(--success-bright);border:1px solid rgba(126,230,171,0.4);}
+  .feedback-banner.incorrect{background:rgba(192,57,43,0.18);color:var(--danger-bright);border:1px solid rgba(255,107,92,0.4);}
+  .close-note{font-weight:500;font-size:12.5px;margin-top:6px;opacity:0.9;}
+
+  .breakdown{border-top:1px solid var(--panel-line);padding-top:12px;margin-top:4px;}
+  .breakdown-title{font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:var(--gold);margin-bottom:8px;}
+  .bd-row{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:6px 0;border-bottom:1px dashed rgba(201,162,77,0.18);}
+  .bd-row .l{color:var(--cream-dim);}
+  .bd-row .r{font-weight:700;color:var(--cream);white-space:nowrap;}
+  .equation{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;background:#0b1a14;border:1px solid var(--panel-line);border-radius:8px;padding:10px 12px;margin-top:10px;line-height:1.7;word-break:break-word;color:var(--gold-bright);}
+  .bd-total{display:flex;justify-content:space-between;padding-top:10px;font-size:15px;font-weight:700;}
+  .money-line{display:flex;justify-content:space-between;font-size:13px;color:var(--cream-dim);padding-top:6px;}
+
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  .stat-card{background:#0b1a14;border:1px solid var(--panel-line);border-radius:10px;padding:10px 8px;text-align:center;}
+  .stat-card .k{font-size:9.5px;text-transform:uppercase;letter-spacing:0.08em;color:var(--cream-dim);}
+  .stat-card .v{font-family:Georgia,'Iowan Old Style','Palatino Linotype',Palatino,serif;font-size:19px;font-weight:600;color:var(--gold-bright);margin-top:2px;}
+
+  .guide-scroll{max-height:340px;overflow-y:auto;border:1px solid var(--panel-line);border-radius:10px;}
+  .guide-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .guide-table thead th{position:sticky;top:0;background:#0b1a14;color:var(--gold-bright);font-size:10.5px;text-transform:uppercase;letter-spacing:0.05em;padding:8px 6px;border-bottom:1px solid var(--panel-line);z-index:1;}
+  .guide-table td{padding:6px;text-align:center;border-bottom:1px solid rgba(201,162,77,0.12);color:var(--cream-dim);}
+  .guide-table td.qty{color:var(--gold);font-weight:700;background:#0b1a14;}
+  .guide-table td.hl{background:rgba(238,207,136,0.22);color:var(--cream);font-weight:700;border-radius:4px;box-shadow:inset 0 0 0 1px var(--gold);}
+  .guide-hint{font-size:11.5px;color:var(--cream-dim);margin-top:8px;line-height:1.5;}
+  .causes{background:rgba(192,57,43,0.1);border:1px solid rgba(255,107,92,0.3);border-radius:9px;padding:10px 12px;margin-top:10px;font-size:12.5px;line-height:1.6;color:var(--cream);}
+  .causes b{color:var(--danger-bright);}
+  .causes ul{margin:4px 0 0;padding-left:18px;}
+
+  @media (max-width:640px){.stats-grid{grid-template-columns:repeat(2,1fr);}h1{font-size:21px;}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="eyebrow">CasinoLife · Academia de Dealers</div>
+  <h1>Examen de Posturas <span>Sobrepuestas</span></h1>
+  <p class="subhead">Ruleta americana de doble cero, vista desde la posición del crupier. Cada tirada acumula varias posturas del mismo jugador sobre el número ganador (Pleno, Medio, Calle, Cuadro, Línea y Línea especial) — nunca una sola. Tu trabajo: sumar el pago total correcto.</p>
+
+  <div class="toprow">
+    <div class="toggle-group" id="modeToggle">
+      <button class="toggle-btn" onclick="setAnswerMode('fichas')">Responder en fichas</button>
+      <button class="toggle-btn" onclick="setAnswerMode('dinero')">Responder en dinero ($)</button>
+    </div>
+    <button class="ghost-btn" id="guideBtn" onclick="toggleGuide()">Ocultar tabla de pagos</button>
+    <button class="ghost-btn" onclick="resetStats()">Reiniciar estadísticas</button>
+  </div>
+
+  <div class="board-scroll">
+    <div class="board-frame" id="boardFrame">
+      <div class="dealer-tag">Vista del crupier</div>
+      <div class="board-inner">
+        <div class="grid-wrap">
+          <div class="grid-numbers" id="gridNumbers"></div>
+          <div class="chip-overlay" id="chipOverlay"></div>
+        </div>
+        <div class="zero-col" id="zeroCol"></div>
+      </div>
+    </div>
+  </div>
+  <div class="legend" id="legend"></div>
+
+  <div class="panels" id="panelsRoot"></div>
+</div>
+
+<script>
+/* ================= GEOMETRY ================= */
+const RED_SET = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const MULT = {straight:35, split:17, street:11, corner:8, sixline:5, special:6};
+const TYPE_LABEL = {straight:'A · Pleno', split:'B · Medio', street:'C · Calle', corner:'D · Cuadro', sixline:'E · Línea', special:'F · Línea especial'};
+const TYPE_COLOR = {straight:'#c9a24d', split:'#3467c9', street:'#8a4fd9', corner:'#2f9e6f', sixline:'#d9822b', special:'#d1367a'};
+const TYPE_COLOR_DARK = {straight:'#7a5f16', split:'#1c3560', street:'#4c2872', corner:'#155c3d', sixline:'#8a4d10', special:'#7a1544'};
+const TYPE_ORDER = ['straight','split','street','corner','sixline','special'];
+const SPECIAL_SET = new Set([0,'00',1,2,3]);
+
+function colOf(n){ return Math.floor((n-1)/3); }
+function rowOf(n){ const ro=((n-1)%3)+1; return ro===3?0:ro===2?1:2; }
+function numberAt(col,row){ const ro = row===0?3:row===1?2:1; return col*3+ro; }
+function colorOf(n){ if(n===0||n==='00') return 'green'; return RED_SET.has(n)?'red':'black'; }
+function colorLabel(n){ const c=colorOf(n); return c==='red'?'Rojo':c==='black'?'Negro':'Verde'; }
+
+function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function choice(arr){ return arr[randInt(0,arr.length-1)]; }
+function betsEqual(a,b){ return a.type===b.type && a.numbers.join(',')===b.numbers.join(','); }
+
+function getSplits(n){
+  const col=colOf(n), row=rowOf(n); const res=[];
+  if(col>0) res.push([numberAt(col-1,row), n].sort((a,b)=>a-b));
+  if(col<11) res.push([n, numberAt(col+1,row)].sort((a,b)=>a-b));
+  if(row>0) res.push([numberAt(col,row-1), n].sort((a,b)=>a-b));
+  if(row<2) res.push([n, numberAt(col,row+1)].sort((a,b)=>a-b));
+  return res;
+}
+function getStreet(n){ const col=colOf(n); return [numberAt(col,0),numberAt(col,1),numberAt(col,2)].sort((a,b)=>a-b); }
+function getCorners(n){
+  const col=colOf(n), row=rowOf(n);
+  const rowOpts=[]; if(row>0) rowOpts.push([row-1,row]); if(row<2) rowOpts.push([row,row+1]);
+  const colOpts=[]; if(col>0) colOpts.push([col-1,col]); if(col<11) colOpts.push([col,col+1]);
+  const res=[];
+  for(const rows of rowOpts) for(const cols of colOpts){
+    const nums=[]; for(const c of cols) for(const r of rows) nums.push(numberAt(c,r));
+    res.push({nums:nums.sort((a,b)=>a-b)});
+  }
+  return res;
+}
+function getSixLines(n){
+  const col=colOf(n); const res=[];
+  if(col>0){ res.push({nums:[numberAt(col-1,0),numberAt(col-1,1),numberAt(col-1,2),numberAt(col,0),numberAt(col,1),numberAt(col,2)].sort((a,b)=>a-b)}); }
+  if(col<11){ res.push({nums:[numberAt(col,0),numberAt(col,1),numberAt(col,2),numberAt(col+1,0),numberAt(col+1,1),numberAt(col+1,2)].sort((a,b)=>a-b)}); }
+  return res;
+}
+function betOptionsForNumber(n){
+  const opts=[];
+  if(n===0||n==='00'){
+    opts.push({type:'straight', numbers:[n]});
+    if(SPECIAL_SET.has(n)) opts.push({type:'special', numbers:[0,'00',1,2,3]});
+    return opts;
+  }
+  opts.push({type:'straight', numbers:[n]});
+  getSplits(n).forEach(s=>opts.push({type:'split', numbers:s}));
+  opts.push({type:'street', numbers:getStreet(n)});
+  getCorners(n).forEach(c=>opts.push({type:'corner', numbers:c.nums}));
+  getSixLines(n).forEach(s=>opts.push({type:'sixline', numbers:s.nums}));
+  if(SPECIAL_SET.has(n)) opts.push({type:'special', numbers:[0,'00',1,2,3]});
+  return opts;
+}
+
+/* ================= STATE ================= */
+let state = {
+  phase:'start', // start | playing | feedback
+  difficulty:1,
+  answerMode:'fichas', // fichas | dinero
+  showGuide:true,
+  winningNumber:null,
+  chipValue:5,
+  bets:[],
+  fichasTotal:0,
+  dineroTotal:0,
+  startTime:null,
+  lastElapsed:null,
+  lastAnswer:null,
+  lastCorrect:null,
+  stats:{attempts:0, correct:0, totalTimeMs:0, streakCorrect:0, streakWrong:0, bestStreak:0}
+};
+
+function setAnswerMode(m){
+  if(state.phase==='playing') return;
+  state.answerMode = m;
+  render();
+}
+function toggleGuide(){
+  state.showGuide = !state.showGuide;
+  document.getElementById('guideBtn').textContent = state.showGuide ? 'Ocultar tabla de pagos' : 'Ver tabla de pagos';
+  render();
+}
+function resetStats(){
+  state.stats = {attempts:0, correct:0, totalTimeMs:0, streakCorrect:0, streakWrong:0, bestStreak:0};
+  state.difficulty = 1;
+  state.phase = 'start';
+  render();
+}
+
+/* ================= ROUND GENERATION ================= */
+function generateWinningNumber(){
+  const pool=[...Array(37).keys(), '00'];
+  return choice(pool);
+}
+
+function generateRound(){
+  state.winningNumber = generateWinningNumber();
+  state.chipValue = choice([5,10,25,50,100]);
+  const n = state.winningNumber;
+  const options = betOptionsForNumber(n);
+
+  const minBets = Math.min(2, options.length);
+  const maxBets = Math.min(options.length, 3 + state.difficulty);
+  const numBets = randInt(minBets, Math.max(minBets, maxBets));
+
+  const shuffled = [...options].sort(()=>Math.random()-0.5);
+  const chosen = [];
+  for(const o of shuffled){
+    if(chosen.length>=numBets) break;
+    if(chosen.some(b=>betsEqual(b,o))) continue;
+    chosen.push(o);
+  }
+  const bets = chosen.map((o,i)=>({
+    id:'b'+i, type:o.type, numbers:o.numbers, chips: randInt(1,20)
+  })).sort((a,b)=> TYPE_ORDER.indexOf(a.type)-TYPE_ORDER.indexOf(b.type));
+
+  state.bets = bets;
+  state.fichasTotal = bets.reduce((s,b)=> s + b.chips*MULT[b.type], 0);
+  state.dineroTotal = state.fichasTotal * state.chipValue;
+  state.phase = 'playing';
+  state.startTime = Date.now();
+  state.lastAnswer = null;
+  render();
+  setTimeout(()=>{ const inp=document.getElementById('answerInput'); if(inp) inp.focus(); }, 100);
+}
+function startGame(){ generateRound(); }
+function nextRound(){ generateRound(); }
+
+function submitAnswer(){
+  const inp = document.getElementById('answerInput');
+  if(!inp) return;
+  const val = parseFloat(inp.value);
+  if(isNaN(val)){ inp.focus(); return; }
+  const elapsed = (Date.now()-state.startTime)/1000;
+  const target = state.answerMode==='dinero' ? state.dineroTotal : state.fichasTotal;
+  const correct = Math.round(val) === Math.round(target);
+
+  const st = state.stats;
+  st.attempts++;
+  st.totalTimeMs += elapsed*1000;
+  if(correct){ st.correct++; st.streakCorrect++; st.streakWrong=0; st.bestStreak=Math.max(st.bestStreak, st.streakCorrect); }
+  else { st.streakWrong++; st.streakCorrect=0; }
+
+  if(st.streakCorrect>0 && st.streakCorrect%3===0) state.difficulty = Math.min(5, state.difficulty+1);
+  if(st.streakWrong>0 && st.streakWrong%2===0) state.difficulty = Math.max(1, state.difficulty-1);
+
+  state.lastAnswer = val;
+  state.lastElapsed = elapsed;
+  state.lastCorrect = correct;
+  state.phase = 'feedback';
+  render();
+}
+
+/* ================= ERROR DIAGNOSIS ================= */
+function diagnoseError(userFichas, bets, correctFichas){
+  const causes = [];
+  // 1) forgot / duplicated an entire posture
+  bets.forEach(b=>{
+    const sub = b.chips*MULT[b.type];
+    if(userFichas === correctFichas - sub){
+      causes.push(`Parece que <b>no sumaste</b> la postura ${TYPE_LABEL[b.type]} en ${b.numbers.join('-')}: son ${b.chips}×${MULT[b.type]} = ${sub} fichas que faltan.`);
+    }
+    if(userFichas === correctFichas + sub){
+      causes.push(`Parece que <b>sumaste dos veces</b> la postura ${TYPE_LABEL[b.type]} en ${b.numbers.join('-')} (${sub} fichas de más).`);
+    }
+  });
+  // 2) used the wrong multiplier for one posture
+  bets.forEach(b=>{
+    TYPE_ORDER.forEach(t=>{
+      if(t===b.type) return;
+      const rightSub = b.chips*MULT[b.type];
+      const wrongSub = b.chips*MULT[t];
+      if(wrongSub!==rightSub && userFichas === correctFichas - rightSub + wrongSub){
+        causes.push(`En ${b.numbers.join('-')} parece que usaste el multiplicador de <b>${TYPE_LABEL[t]} (×${MULT[t]})</b> en vez de <b>${TYPE_LABEL[b.type]} (×${MULT[b.type]})</b>.`);
+      }
+    });
+  });
+  // 3) miscounted chips by one on a posture
+  bets.forEach(b=>{
+    const rightSub = b.chips*MULT[b.type];
+    if(b.chips>1){
+      const subMinus = (b.chips-1)*MULT[b.type];
+      if(userFichas === correctFichas - rightSub + subMinus){
+        causes.push(`En ${TYPE_LABEL[b.type]} (${b.numbers.join('-')}) parece que contaste <b>${b.chips-1} fichas</b> en vez de ${b.chips}.`);
+      }
+    }
+    const subPlus = (b.chips+1)*MULT[b.type];
+    if(userFichas === correctFichas - rightSub + subPlus){
+      causes.push(`En ${TYPE_LABEL[b.type]} (${b.numbers.join('-')}) parece que contaste <b>${b.chips+1} fichas</b> en vez de ${b.chips}.`);
+    }
+  });
+  // dedupe, cap at 2
+  return [...new Set(causes)].slice(0,2);
+}
+
+/* ================= RENDER: BOARD ================= */
+// Coordinates computed assuming col0 at LEFT; mirrored at render time so 0/00 sit at the dealer's right.
+function chipPosition(bet){
+  const type = bet.type;
+  if(type==='special') return {left:0, top:50};
+  const numbers = bet.numbers;
+  const positions = numbers.map(n=>({col:colOf(n), row:rowOf(n)}));
+  const W = 100/12, H = 100/3;
+  if(type==='straight'){ const {col,row}=positions[0]; return {left:(col+0.5)*W, top:(row+0.5)*H}; }
+  if(type==='split'){
+    const cols=[...new Set(positions.map(p=>p.col))];
+    const rows=[...new Set(positions.map(p=>p.row))];
+    if(cols.length===2) return {left:Math.max(...cols)*W, top:(rows[0]+0.5)*H};
+    return {left:(cols[0]+0.5)*W, top:Math.max(...rows)*H};
+  }
+  if(type==='street'){ const col = positions[0].col; return {left:(col+0.5)*W, top:99.5}; }
+  if(type==='corner'){
+    const cols=[...new Set(positions.map(p=>p.col))];
+    const rows=[...new Set(positions.map(p=>p.row))];
+    return {left:Math.max(...cols)*W, top:Math.max(...rows)*H};
+  }
+  if(type==='sixline'){ const cols=[...new Set(positions.map(p=>p.col))]; return {left:Math.max(...cols)*W, top:99.5}; }
+  return null;
+}
+
+function renderBoard(){
+  const zeroCol = document.getElementById('zeroCol');
+  const winnerIsZero = state.phase!=='start' && state.winningNumber===0;
+  const winnerIsDoubleZero = state.phase!=='start' && state.winningNumber==='00';
+  zeroCol.innerHTML = `
+    <div class="zero-cell ${winnerIsZero?'is-winner':''}">0</div>
+    <div class="zero-cell ${winnerIsDoubleZero?'is-winner':''}">00</div>`;
+
+  const grid = document.getElementById('gridNumbers');
+  let html='';
+  for(let row=0; row<3; row++){
+    for(let displayIndex=0; displayIndex<12; displayIndex++){
+      const col = 11-displayIndex;
+      const n = numberAt(col,row);
+      html += `<div class="cell ${colorOf(n)}">${n}</div>`;
+    }
+  }
+  grid.innerHTML = html;
+
+  const overlay = document.getElementById('chipOverlay');
+  let chipHtml='';
+  if(state.phase!=='start'){
+    state.bets.forEach((bet,i)=>{
+      const pos = chipPosition(bet);
+      if(!pos) return;
+      const mirroredLeft = 100 - pos.left;
+      const nudgeX = ((i%3)-1)*11;
+      const nudgeY = (Math.floor(i/3)%3-1)*11;
+      const c = TYPE_COLOR[bet.type];
+      const cd = TYPE_COLOR_DARK[bet.type];
+      const layers = Math.max(1, Math.min(7, Math.ceil(bet.chips/3)));
+      const stackHeight = 30 + (layers-1)*3.4;
+      let layersHtml='';
+      for(let L=0; L<layers; L++){
+        const isTop = L===layers-1;
+        layersHtml += `<div class="layer ${isTop?'top':''}" style="bottom:${L*3.4}px; --c:${c}; --cd:${cd};">${isTop?`<div class="face"><span class="qty">${bet.chips}</span></div>`:''}</div>`;
+      }
+      chipHtml += `<div class="stack3d" style="left:calc(${mirroredLeft}% + ${nudgeX}px); top:calc(${pos.top}% + ${nudgeY}px); height:${stackHeight}px; transform:translate(-50%,-100%); z-index:${10+i};">
+        <div class="drop-inner" style="--d:${i*70}ms;">
+          <div class="shadow-pool"></div>
+          ${layersHtml}
+        </div>
+      </div>`;
+    });
+    if(state.winningNumber!==0 && state.winningNumber!=='00'){
+      const dPos = chipPosition({type:'straight', numbers:[state.winningNumber]});
+      const dMirroredLeft = 100 - dPos.left;
+      chipHtml += `<div class="dolly" style="left:${dMirroredLeft}%; top:${dPos.top}%;"></div>`;
+    }
+  }
+  overlay.innerHTML = chipHtml;
+
+  const frame = document.getElementById('boardFrame');
+  frame.classList.remove('flash-correct','flash-incorrect');
+  if(state.phase==='feedback'){
+    void frame.offsetWidth;
+    frame.classList.add(state.lastCorrect ? 'flash-correct' : 'flash-incorrect');
+  }
+
+  document.querySelectorAll('#modeToggle .toggle-btn').forEach((b,i)=>{
+    b.classList.toggle('active', (i===0 && state.answerMode==='fichas') || (i===1 && state.answerMode==='dinero'));
+    b.disabled = state.phase==='playing';
+  });
+
+  document.getElementById('legend').innerHTML = TYPE_ORDER.map(t=>
+    `<div class="legend-item"><span class="legend-dot" style="background:${TYPE_COLOR[t]}"></span>${TYPE_LABEL[t]} · ${MULT[t]} a 1</div>`
+  ).join('');
+}
+
+/* ================= RENDER: PANELS ================= */
+function betLine(bet){
+  const numsLabel = bet.numbers.join('-');
+  const subtotal = bet.chips * MULT[bet.type];
+  return `<div class="bd-row">
+    <span class="l"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${TYPE_COLOR[bet.type]};margin-right:6px;"></span>${TYPE_LABEL[bet.type]} (${numsLabel}) — ${bet.chips} × ${MULT[bet.type]}</span>
+    <span class="r">${subtotal} fichas</span>
+  </div>`;
+}
+function ticketLine(bet){
+  const numsLabel = bet.numbers.join('-');
+  return `<div class="ticket-row"><span><span class="code" style="background:${TYPE_COLOR[bet.type]}"></span>${TYPE_LABEL[bet.type]} (${numsLabel})</span><span>${bet.chips} fichas</span></div>`;
+}
+
+function renderPanels(){
+  const root = document.getElementById('panelsRoot');
+  const st = state.stats;
+  const accuracy = st.attempts ? Math.round((st.correct/st.attempts)*100) : 0;
+  const avgTime = st.attempts ? (st.totalTimeMs/st.attempts/1000).toFixed(1) : '0.0';
+
+  let mainPanel = '';
+
+  if(state.phase==='start'){
+    mainPanel = `
+      <div class="panel">
+        <div class="panel-label">Modo examen: posturas sobrepuestas</div>
+        <p class="start-copy">Cada tirada acumula varias posturas del mismo jugador sobre el número ganador — nunca una sola. Verás Pleno (A), Medio (B), Calle (C), Cuadro (D), Línea (E) y, si cae 0, 00, 1, 2 o 3, también Línea especial (F). Las cantidades van de 1 a 20 fichas por postura, igual que tu tabla de pagos.</p>
+        <button class="primary-btn" onclick="startGame()">Iniciar tirada</button>
+      </div>`;
+  } else {
+    const n = state.winningNumber;
+    mainPanel = `
+      <div class="panel">
+        <div class="panel-label">${state.phase==='playing' ? 'Anotación de piso' : 'Resultado'}</div>
+        <div class="question-row">
+          <div class="qstat"><div class="k">Número ganador</div><div class="v ${colorOf(n)}">${n} · ${colorLabel(n)}</div></div>
+          ${state.answerMode==='dinero' ? `<div class="qstat"><div class="k">Valor de ficha</div><div class="v">$${state.chipValue}</div></div>` : ''}
+          <div class="qstat"><div class="k">Nivel</div><div class="v">${state.difficulty}/5</div></div>
+        </div>
+        <div class="ticket">${state.bets.map(ticketLine).join('')}</div>`;
+
+    if(state.phase==='playing'){
+      mainPanel += `
+        <p class="prompt">Eres el dealer. Suma todas las posturas que impactan al ${n}. ¿Cuál es el <strong>pago total${state.answerMode==='dinero' ? ' en pesos' : ' en fichas'}</strong>?</p>
+        <div class="answer-row">
+          <input type="number" id="answerInput" class="answer-input" placeholder="${state.answerMode==='dinero' ? '$ pago total' : 'fichas totales'}" onkeydown="if(event.key==='Enter') submitAnswer()">
+          <button class="primary-btn" onclick="submitAnswer()">Confirmar pago</button>
+        </div>
+      </div>`;
+    } else {
+      const correct = state.lastCorrect;
+      const target = state.answerMode==='dinero' ? state.dineroTotal : state.fichasTotal;
+      const diff = Math.abs(Math.round(state.lastAnswer) - Math.round(target));
+      const closeThreshold = state.answerMode==='dinero' ? state.chipValue*3 : 3;
+      const equation = state.bets.map(b=>`(${b.chips}×${MULT[b.type]})`).join(' + ') + ` = ${state.fichasTotal} fichas`;
+      const userFichas = state.answerMode==='dinero' ? Math.round(state.lastAnswer/state.chipValue) : Math.round(state.lastAnswer);
+      const causes = correct ? [] : diagnoseError(userFichas, state.bets, state.fichasTotal);
+
+      mainPanel += `
+        <div class="feedback-banner ${correct?'correct':'incorrect'}">
+          ${correct ? '✓ Pago correcto' : '✕ Pago incorrecto'} — tu respuesta: ${state.answerMode==='dinero'?'$':''}${Number(state.lastAnswer).toLocaleString('es-MX')}${state.answerMode==='fichas'?' fichas':''} · tiempo: ${state.lastElapsed.toFixed(1)}s
+          ${!correct ? `<div class="close-note">La respuesta correcta era <b>${state.answerMode==='dinero'?'$'+state.dineroTotal.toLocaleString('es-MX'):state.fichasTotal+' fichas'}</b>.</div>` : ''}
+          ${(!correct && diff>0 && diff<=closeThreshold) ? `<div class="close-note">Estuviste muy cerca — te faltó/sobró ${diff}${state.answerMode==='dinero'?' pesos':' fichas'}.</div>` : ''}
+        </div>
+        ${(!correct && causes.length) ? `<div class="causes"><b>¿Dónde estuvo el error?</b><ul>${causes.map(c=>`<li>${c}</li>`).join('')}</ul></div>` : ''}
+        <div class="breakdown">
+          <div class="breakdown-title">Suma desglosada, postura por postura</div>
+          ${state.bets.map(betLine).join('')}
+          <div class="bd-total"><span>Total en fichas</span><span>${state.fichasTotal} fichas</span></div>
+          ${state.answerMode==='dinero' ? `<div class="money-line"><span>${state.fichasTotal} fichas × $${state.chipValue}</span><span>$${state.dineroTotal.toLocaleString('es-MX')}</span></div>` : ''}
+          <div class="equation">${equation}</div>
+        </div>
+        <div style="margin-top:16px;">
+          <button class="primary-btn" onclick="nextRound()">Siguiente tirada</button>
+        </div>
+      </div>`;
+    }
+  }
+
+  const statsPanel = `
+    <div class="panel">
+      <div class="panel-label">Panel de rendimiento</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="k">Precisión</div><div class="v">${accuracy}%</div></div>
+        <div class="stat-card"><div class="k">Tiempo prom.</div><div class="v">${avgTime}s</div></div>
+        <div class="stat-card"><div class="k">Racha actual</div><div class="v">${st.streakCorrect}</div></div>
+        <div class="stat-card"><div class="k">Nivel</div><div class="v">${state.difficulty}/5</div></div>
+      </div>
+    </div>`;
+
+  root.innerHTML = mainPanel + statsPanel + (state.showGuide ? renderGuide() : '');
+}
+
+function renderGuide(){
+  const activeKey = (t,c)=> state.phase!=='start' && state.bets.some(b=>b.type===t && b.chips===c);
+  let rows = '';
+  for(let c=1;c<=20;c++){
+    rows += `<tr><td class="qty">${c}</td>`;
+    TYPE_ORDER.forEach(t=>{
+      const val = c*MULT[t];
+      rows += `<td class="${activeKey(t,c)?'hl':''}">${val}</td>`;
+    });
+    rows += `</tr>`;
+  }
+  return `
+    <div class="panel">
+      <div class="panel-label">Tabla de pagos (guía para sumar)</div>
+      <div class="guide-scroll">
+        <table class="guide-table">
+          <thead><tr><th>Fichas</th>${TYPE_ORDER.map(t=>`<th style="color:${TYPE_COLOR[t]}">${TYPE_LABEL[t].split('·')[1]||TYPE_LABEL[t]}<br><span style="opacity:0.7">×${MULT[t]}</span></th>`).join('')}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <p class="guide-hint">Las celdas resaltadas en dorado son las posturas de la tirada actual — úsalas para armar tu suma sin tener que multiplicar de memoria mientras aprendes.</p>
+    </div>`;
+}
+
+function render(){ renderBoard(); renderPanels(); }
+render();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{ /* offline install will just be skipped, app still works online */ });
+  });
+}
+</script>
+</body>
+</html>
+
